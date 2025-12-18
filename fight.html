@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Joc de cartes - POKEAPI</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body class="body-fight">
+    <div id="fight" class="fight">
+      <div id="battle-message" class="battle-message"></div>
+    </div>
+    <template id="template">
+      <div class="pokemon pokemon-fight">
+        <div class="pokemon-card">
+          <div class="pokemon-nameHp">
+            <p class="pokemon-name"></p>
+            <p class="pokemon-hp"></p>
+          </div>
+          <div class="pokemon-divImage">
+            <img src="" alt="" class="pokemon-image" />
+          </div>
+          <p class="pokemon-types"></p>
+          <div class="pokemon-attackDefense">
+            <p class="pokemon-attack"></p>
+            <p class="pokemon-defense"></p>
+          </div>
+          <p class="pokemon-speed"></p>
+        </div>
+        <div class="pokemon-moves-list">
+          <h4>Pick a move:</h4>
+          <ul class="moves-list"></ul>
+        </div>
+      </div>
+    </template>
+    <script src="js/fight.js"></script>
+  </body>
+</html>
