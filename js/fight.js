@@ -1,6 +1,8 @@
+// DOM elements
 const fightDiv = document.getElementById("fight");
 const temp = document.getElementById("template");
 
+// Pokemon constructor
 const Pokemon = function (
   id,
   name,
@@ -24,6 +26,7 @@ const Pokemon = function (
   this.hpElement = null;
 };
 
+// Global variables
 const pokedex = [];
 const typeChart = {
   normal: { rock: 0.5, ghost: 0, steel: 0.5 },
@@ -151,27 +154,37 @@ const typeChart = {
   },
 };
 
+// Event listeners
+
+// Initial render
 document.addEventListener("DOMContentLoaded", async () => {
+  // Retrieve selected Pokémon from session storage
   let pokemon1Data = sessionStorage.getItem("pokemon1");
   let pokemon2Data = sessionStorage.getItem("pokemon2");
   let pokemon1 = JSON.parse(pokemon1Data);
   let pokemon2 = JSON.parse(pokemon2Data);
+  // Add Pokémon to pokedex
   await addPokemon(pokemon1, true);
   await addPokemon(pokemon2, false);
-  renderFight();
+  renderFight(); // Render fight interface
 });
 
+// Functions
+
+// Add Pokémon to pokedex
 async function addPokemon(pokemon, isFirst = false) {
+  // Fetch sprite if first Pokémon
   if (isFirst) {
     let response = await fetch(
       `https://pokeapi.co/api/v2/pokemon/${pokemon.id}`
     );
     let responseData = await response.json();
+    // Use back sprite if available
     pokemon.sprite = responseData.sprites.back_default
       ? responseData.sprites.back_default
       : responseData.sprites.front_default;
   }
-
+  // Push new Pokémon to pokedex
   pokedex.push(
     new Pokemon(
       pokemon.id,
@@ -187,13 +200,16 @@ async function addPokemon(pokemon, isFirst = false) {
   );
 }
 
+// Render fight interface
 function renderFight() {
-  let fastestIndex = pokedex[0].speed >= pokedex[1].speed ? 0 : 1;
+  let fastestIndex = pokedex[0].speed >= pokedex[1].speed ? 0 : 1; // Determine fastest Pokémon
+  // Render each Pokémon
   pokedex.forEach((pokemon, index) => {
     const clonedTemplate = temp.content.cloneNode(true);
-
+    // Set front card attributes and styles
     let card = clonedTemplate.querySelector(".pokemon-card");
     card.setAttribute("id", `card-${pokemon.id}`);
+    // Populate template with Pokémon data
     card.style.backgroundImage = `var(--type-${pokemon.types[0]}-color)`;
     clonedTemplate.querySelector(".pokemon-name").textContent = pokemon.name;
     clonedTemplate.querySelector(
@@ -218,35 +234,38 @@ function renderFight() {
     clonedTemplate.querySelector(
       ".pokemon-speed"
     ).textContent = `Speed: ${pokemon.speed}`;
+    // Position Pokémon cards
     if (index === 0) {
+      // First Pokémon at bottom-left
       clonedTemplate
         .querySelector(".pokemon")
         .classList.add("pokemon-bottom-left");
     } else {
+      // Second Pokémon at top-right
       clonedTemplate
         .querySelector(".pokemon")
         .classList.add("pokemon-top-right");
     }
-
+    // Set up moves list
     clonedTemplate
       .querySelector(".pokemon-moves-list")
       .setAttribute("id", `pokemon-moves-list-${pokemon.id}`);
-
+    // Hide moves list for slower Pokémon initially
     if (index !== fastestIndex) {
       clonedTemplate
         .querySelector(".pokemon-moves-list")
         .classList.add("hidden");
     }
-
+    // Populate moves
     let movesList = clonedTemplate.querySelector(".moves-list");
     pokemon.moves.slice(0, 4).forEach((move) => {
-      const li = document.createElement("li");
-      const btn = document.createElement("button");
+      const li = document.createElement("li"); // Move list item
+      const btn = document.createElement("button"); // Move button
       btn.classList.add("move-button");
       btn.textContent = `${move.name} (Type: ${move.type}, Pow: ${move.power}, Acc: ${move.accuracy})`;
-
+      // Set up attack on move button click
       btn.addEventListener("click", () => {
-        performAttack(index, move);
+        performAttack(index, move); // Perform attack
       });
 
       li.appendChild(btn);
@@ -257,42 +276,52 @@ function renderFight() {
   });
 }
 
+// Perform attack from attacker to defender
 async function performAttack(attackerIndex, move) {
+  // Determine defender index
   let defenderIndex = attackerIndex === 0 ? 1 : 0;
+  // Get attacker and defender Pokémon
   let attacker = pokedex[attackerIndex];
   let defender = pokedex[defenderIndex];
-
-  let result = calculateDamage(attacker, defender, move);
+  
+  let result = calculateDamage(attacker, defender, move); // Calculate damage
+  // Handle attack result
   if (!result.hit) {
-    changeShifts();
-    await showBattleMessage(`${attacker.name} falló el ataque ${move.name}!`);
+    changeShifts(); // Change turns
+    await showBattleMessage(`${attacker.name} falló el ataque ${move.name}!`); // Show miss message
   } else {
-    defender.hp = Math.max(0, defender.hp - result.damage);
-    defender.hpElement.textContent = `${defender.hp} HP`;
-
+    // Apply damage to defender
+    defender.hp = Math.max(0, defender.hp - result.damage); // Reduce defender HP
+    defender.hpElement.textContent = `${defender.hp} HP`; // Update HP display
+    // Check if defender is defeated
     if (defender.hp === 0) {
+      // Hide moves lists
       pokedex.forEach((pokemon) => {
         document
           .querySelector(`#pokemon-moves-list-${pokemon.id}`)
           .classList.add("hidden");
       });
     } else {
-      changeShifts();
+      changeShifts(); // Change turns
     }
-
+    // Show attack result message
     await showBattleMessage(
-      `${attacker.name} usa ${move.name} y hace ${result.damage} de daño. ` +
-        `Efectividad x${result.effectiveness}`
+      `${attacker.name} uses ${move.name} and deals ${result.damage} damage. ` +
+      `Effectiveness x${result.effectiveness}`
     );
+    // Check again if defender is defeated
     if (defender.hp === 0) {
-      await showBattleMessage(`${defender.name} ha sido derrotado!`, 2000);
-      await showBattleMessage("La pelea ha terminado!", 2000);
-      window.location.href = "index.html";
+      // Show defeat messages and end battle
+      await showBattleMessage(`${defender.name} has been defeated!`, 2000);
+      await showBattleMessage("The battle is over!", 2000);
+      window.location.href = "index.html"; // Redirect to main page
     }
   }
 }
 
+// Calculate damage from attacker to defender using a move
 function calculateDamage(attacker, defender, move) {
+  // Check for move hit based on accuracy
   const roll = Math.random() * 100;
   if (roll > move.accuracy) {
     return {
@@ -302,21 +331,26 @@ function calculateDamage(attacker, defender, move) {
     };
   }
 
+  // Base damage calculation
   let damage = move.power * (attacker.attack / 50);
 
+  // STAB (Same-Type Attack Bonus) bonus
   if (attacker.types.includes(move.type)) {
     damage *= 1.5;
   }
 
+  // Type effectiveness
   let effectiveness = getTypeMultiplier(move.type, defender.types);
   damage *= effectiveness;
 
+  // Apply defender's defense
   let defenseMultiplier = (100 - defender.defense) / 100;
-  defenseMultiplier = Math.max(defenseMultiplier, 0.1);
+  defenseMultiplier = Math.max(defenseMultiplier, 0.1); // Minimum multiplier
   damage *= defenseMultiplier;
 
-  damage = Math.max(1, Math.round(damage));
+  damage = Math.max(1, Math.round(damage)); // Ensure at least 1 damage
 
+  // Return damage result
   return {
     hit: true,
     damage,
@@ -324,9 +358,11 @@ function calculateDamage(attacker, defender, move) {
   };
 }
 
+// Get type effectiveness multiplier
 function getTypeMultiplier(moveType, defenderTypes) {
   let mult = 1;
-  const row = typeChart[moveType] || {};
+  const row = typeChart[moveType] || {}; // Get type chart row
+  // Calculate multiplier for each defender type
   defenderTypes.forEach((t) => {
     if (row[t] != null) {
       mult *= row[t];
@@ -335,19 +371,21 @@ function getTypeMultiplier(moveType, defenderTypes) {
   return mult;
 }
 
+// Show battle message for a duration
 function showBattleMessage(text, duration = 4000) {
+  // Return a promise that resolves after message is shown
   return new Promise((resolve) => {
-    const msgBox = document.getElementById("battle-message");
+    const msgBox = document.getElementById("battle-message"); // Message box element
     if (!msgBox) {
       resolve();
       return;
     }
-
+    // Display message
     msgBox.textContent = text;
     msgBox.classList.add("visible");
-
+    // Clear previous timeout if any
     clearTimeout(showBattleMessage._timeoutId);
-
+    // Hide message after duration
     showBattleMessage._timeoutId = setTimeout(() => {
       msgBox.classList.remove("visible");
       resolve();
@@ -355,9 +393,10 @@ function showBattleMessage(text, duration = 4000) {
   });
 }
 
+// Change turns by toggling moves list visibility
 function changeShifts() {
   const pokemonMovesLists = pokedex.map((pokemon) =>
     document.getElementById(`pokemon-moves-list-${pokemon.id}`)
-  );
-  pokemonMovesLists.forEach((list) => list.classList.toggle("hidden"));
+  ); // Get moves list elements
+  pokemonMovesLists.forEach((list) => list.classList.toggle("hidden")); // Toggle visibility
 }
